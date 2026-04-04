@@ -106,7 +106,20 @@ export default function Product() {
   });
 
   const {title, descriptionHtml, images, metafields, metafield} = product;
-  console.log(product);
+
+  const productDescriptionMetafield = metafields.find(
+    (m) => m?.key === 'product_description' && m?.namespace === 'custom',
+  );
+
+  const modelDetailsMetafield = metafields.find(
+    (m) => m?.key === 'model_details' && m?.namespace === 'custom',
+  );
+
+  const uspPointersMetafield =
+    metafield?.key === 'usp_pointers' && metafield?.references?.edges.length > 0
+      ? metafield
+      : null;
+
   return (
     <div className="product">
       <div className="product-gallery">
@@ -124,56 +137,55 @@ export default function Product() {
           productOptions={productOptions}
           selectedVariant={selectedVariant}
         />
-        <section className="flex flex-col gap-3">
-          <p>
-            <strong className="underline underline-offset-2">
-              Model Details
-            </strong>
-          </p>
-          <RichTextMetafield
-            metafield={metafields.find(
-              (m) => m.key === 'model_details' && m.namespace === 'custom',
-            )}
-          />
-        </section>
-        <section className="flex flex-col gap-3">
-          <p>
-            <strong className="underline underline-offset-2">
-              Product Specifications
-            </strong>
-          </p>
-          <RichTextMetafield
-            metafield={metafields.find(
-              (m) =>
-                m.key === 'product_description' && m.namespace === 'custom',
-            )}
-          />
-        </section>
+        {modelDetailsMetafield && (
+          <section className="flex flex-col gap-3">
+            <p>
+              <strong className="underline underline-offset-2">
+                Model Details
+              </strong>
+            </p>
+            <RichTextMetafield metafield={modelDetailsMetafield} />
+          </section>
+        )}
 
-        {metafield?.key === 'usp_pointers' &&
-          metafield?.references?.edges.length > 0 && (
-            <section className="flex flex-col gap-3">
-              <p>
-                <strong className="underline underline-offset-2">
-                  Usp Pointers
-                </strong>
-              </p>
-            <div className='grid grid-cols-2 gap-2'>
-                {metafield.references.edges.map((edge) => {
-                return <UspPointers key={edge.node.id} fields={edge.node.fields} />;
+        {productDescriptionMetafield && (
+          <section className="flex flex-col gap-3">
+            <p>
+              <strong className="underline underline-offset-2">
+                Product Specifications
+              </strong>
+            </p>
+            <RichTextMetafield metafield={productDescriptionMetafield} />
+          </section>
+        )}
+
+        {uspPointersMetafield && (
+          <section className="flex flex-col gap-3">
+            <p>
+              <strong className="underline underline-offset-2">
+                Usp Pointers
+              </strong>
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {uspPointersMetafield.references.edges.map((edge) => {
+                return (
+                  <UspPointers key={edge.node.id} fields={edge.node.fields} />
+                );
               })}
             </div>
-            </section>
-          )}
+          </section>
+        )}
 
-        <section className="flex flex-col gap-3">
-          <p>
-            <strong className="underline underline-offset-2">
-              Description
-            </strong>
-          </p>
-          <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
-        </section>
+        {descriptionHtml && (
+          <section className="flex flex-col gap-3">
+            <p>
+              <strong className="underline underline-offset-2">
+                Description
+              </strong>
+            </p>
+            <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
+          </section>
+        )}
       </div>
       <Analytics.ProductView
         data={{
