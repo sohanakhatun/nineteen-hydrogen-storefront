@@ -64,6 +64,14 @@ export default function Homepage() {
   const data = useLoaderData();
   return (
     <div className="home">
+      <section className="home-hero">
+        <p className="eyebrow">Nineteen Hydrogen</p>
+        <h1>Minimal essentials for everyday wear.</h1>
+        <p className="home-intro">
+          Clean silhouettes, straightforward details, and a storefront designed
+          to stay out of the way.
+        </p>
+      </section>
       <FeaturedCollection collection={data.featuredCollection} />
       <RecommendedProducts products={data.recommendedProducts} />
     </div>
