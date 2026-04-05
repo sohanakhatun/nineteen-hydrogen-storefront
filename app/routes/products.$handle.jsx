@@ -11,6 +11,8 @@ import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import RichTextMetafield from '~/components/RichTextMetafield';
+import UspPointers from '~/components/UspPointers';
 
 /**
  * @type {Route.MetaFunction}
@@ -103,30 +105,87 @@ export default function Product() {
     selectedOrFirstAvailableVariant: selectedVariant,
   });
 
-  const {title, descriptionHtml} = product;
+  const {title, descriptionHtml, images, metafields, metafield} = product;
+
+  const productDescriptionMetafield = metafields.find(
+    (m) => m?.key === 'product_description' && m?.namespace === 'custom',
+  );
+
+  const modelDetailsMetafield = metafields.find(
+    (m) => m?.key === 'model_details' && m?.namespace === 'custom',
+  );
+
+  const uspPointersMetafield =
+    metafield?.key === 'usp_pointers' && metafield?.references?.edges.length > 0
+      ? metafield
+      : null;
 
   return (
     <div className="product">
-      <ProductImage image={selectedVariant?.image} />
-      <div className="product-main">
+      <div className="product-gallery">
+        {images.edges.map(({node}) => (
+          <ProductImage key={node.id} image={node} />
+        ))}
+      </div>
+      <div className="product-main flex flex-col gap-3">
         <h1>{title}</h1>
         <ProductPrice
           price={selectedVariant?.price}
           compareAtPrice={selectedVariant?.compareAtPrice}
         />
-        <br />
         <ProductForm
           productOptions={productOptions}
           selectedVariant={selectedVariant}
         />
-        <br />
-        <br />
-        <p>
-          <strong>Description</strong>
-        </p>
-        <br />
-        <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
-        <br />
+        {modelDetailsMetafield && (
+          <section className="flex flex-col gap-3">
+            <p>
+              <strong className="underline underline-offset-2">
+                Model Details
+              </strong>
+            </p>
+            <RichTextMetafield metafield={modelDetailsMetafield} />
+          </section>
+        )}
+
+        {productDescriptionMetafield && (
+          <section className="flex flex-col gap-3">
+            <p>
+              <strong className="underline underline-offset-2">
+                Product Specifications
+              </strong>
+            </p>
+            <RichTextMetafield metafield={productDescriptionMetafield} />
+          </section>
+        )}
+
+        {uspPointersMetafield && (
+          <section className="flex flex-col gap-3">
+            <p>
+              <strong className="underline underline-offset-2">
+                Usp Pointers
+              </strong>
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {uspPointersMetafield.references.edges.map((edge) => {
+                return (
+                  <UspPointers key={edge.node.id} fields={edge.node.fields} />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {descriptionHtml && (
+          <section className="flex flex-col gap-3">
+            <p>
+              <strong className="underline underline-offset-2">
+                Description
+              </strong>
+            </p>
+            <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
+          </section>
+        )}
       </div>
       <Analytics.ProductView
         data={{
@@ -189,6 +248,57 @@ const PRODUCT_FRAGMENT = `#graphql
     id
     title
     vendor
+    images(first: 20) {
+      edges {
+        node {
+          id
+          altText
+          url
+          width
+          height
+        }
+      }
+    }
+  metafields(identifiers: [
+  { namespace: "custom", key: "model_details" },
+  { namespace: "custom", key: "product_description" },
+   {namespace: "custom", key: "fabric_details" },
+]) {
+  value
+  type
+  key
+  namespace
+}
+metafield(namespace: "custom", key: "usp_pointers") {
+  value
+  type
+  key
+  references(first: 10) {
+    edges {
+      node {
+        ... on Metaobject {
+          id
+          type
+          fields {
+            key
+            value
+            type
+            reference {
+              ... on MediaImage {
+                image {
+                  url
+                  altText
+                  width
+                  height
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
     handle
     descriptionHtml
     description
@@ -214,7 +324,7 @@ const PRODUCT_FRAGMENT = `#graphql
     selectedOrFirstAvailableVariant(selectedOptions: $selectedOptions, ignoreUnknownOptions: true, caseInsensitiveMatch: true) {
       ...ProductVariant
     }
-    adjacentVariants (selectedOptions: $selectedOptions) {
+    adjacentVariants(selectedOptions: $selectedOptions) {
       ...ProductVariant
     }
     seo {
